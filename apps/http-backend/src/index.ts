@@ -3,30 +3,69 @@ import  jwt  from "jsonwebtoken";
 import { JWT_SECRET } from "@repo/backend-common/config";
 import { middleware } from "./middleware";
 import {createRoomSchema, CreateUserSchema, SignInSchema} from "@repo/common/types"
-
+import { prismaClient } from "@repo/db";
+import bcrypt from "bcrypt";
 const app = express();
 
-app.post("/signup", (req, res) => {
-    const data = CreateUserSchema.safeParse(req.body);
-    if(!data.success) {
+app.post("/signup", async (req, res) => {
+    const parsedData = CreateUserSchema.safeParse(req.body);
+    if(!parsedData.success) {
         res.json({
             message: "Incorrect inputs"
         })
         return;
     }
+    const hashedPassword = await bcrypt.hash(parsedData.data?.password, 10)
+    const user = await prismaClient.user.create({
+        data: {
+            email: parsedData.data?.username,
+            password: hashedPassword,
+            name: parsedData.data?.name,
+        }
+    })
+    res.json({
+        userId: user.id
+    })
 })
-app.post("/signin", (req, res) => {
+app.post("/signin", async (req, res) => {
 
-    const data = SignInSchema.safeParse(req.body);
-    if(!data.success) {
+    const parsedData = SignInSchema.safeParse(req.body);
+    if(!parsedData.success) {
         res.json({
             message: "Incorrect inputs"
         })
         return;
     }
-   const userId = 1;
+    const user = await prismaClient.user.findFirst({
+        where: {
+            email: parsedData.data?.username,
+        }
+    })
+    if(!user) {
+        res.json({
+            message: "Incorrect inputs"
+        })
+        return;
+    }
+
+    if (!user) {
+        res.status(403).json({
+            message: "Not authorized"
+        })
+        return;
+    }
+
+    const isValidPassword = await bcrypt.compare(parsedData.data?.password, user.password);
+
+    if(!isValidPassword) {
+        res.json({
+            message: "Incorrect inputs"
+        })
+        return;
+    }
+
    const token = jwt.sign({
-    userId
+    userId: user.id
    }, JWT_SECRET)
 
    res.json({
@@ -48,5 +87,5 @@ app.post("/room",middleware, (req, res) => {
  
 })
 
-app.listen(3000);
+app.listen(3001);
 
