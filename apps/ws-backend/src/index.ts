@@ -1,7 +1,35 @@
-import { WebSocketServer } from "ws";
+import { WebSocketServer, WebSocket } from "ws";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { JWT_SECRET } from "@repo/backend-common/config";
+
 const wss = new WebSocketServer({ port: 8080 });
+
+interface User {
+  ws: WebSocket,
+  userId: string,
+  rooms: string[]
+}
+
+const users: User[] = [];  // stores all the users who are connected to the server acts as a in-memory database(like state in react) or recoil state management
+
+function checkUser(token: string): string | null {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (typeof decoded == "string") {
+      return null;
+    }
+
+    if (!decoded || !decoded.userId) {
+      return null;
+    }
+
+    return decoded.userId;
+  } catch(e) {
+    return null;
+  }
+  return null;
+}
 
 wss.on('connection', function connection(ws, request) {
   const url = request.url; // ws://localhost:3000?token=123123
@@ -9,17 +37,50 @@ wss.on('connection', function connection(ws, request) {
   if(!url) {
     return;
   }
+  
 
   const queryParams = new URLSearchParams(url.split('?')[1]); // ["ws://localhost:3000", "token=123123"] this splits into a array
   const token = queryParams.get('token') ?? "";
-  const decoded = jwt.verify(token, JWT_SECRET);
+  const userId = checkUser(token);
 
-  if(!decoded || !(decoded as JwtPayload).userId) {
+  if(!userId) {
     ws.close();
-    return;
+    return null;
   }
+
+  users.push({
+    userId,
+    rooms: [],
+    ws
+  });
+
   ws.on('message', function message(data) {
-    ws.send('something');
+    const parsedData = JSON.parse(data.toString()); // { type: "join-room", roomId: 123 }
+    if(parsedData.type === "join_room") {
+      const user = users.find(x => x.ws === ws); // find the user who sent the message
+      if(user) {
+        user.rooms.push(parsedData.roomId); // add the room to the user's rooms
+      }
+    }
+
+    if(parsedData.type === "leave_room") {
+      const user = users.find(x => x.ws === ws); // find the user who sent the message
+      if(user) {
+        user.rooms = user?.rooms.filter(x => x !== parsedData.room); // remove the room from the user's rooms   [10, 20, 123, 50] 10  !== 123 ? ✅ Yes, keep it  123 !== 123 ? ❌ No,  throw it away
+      }
+    }
+
+    if(parsedData.type === "chat") {
+      const roomId = parsedData.roomId; // 123
+      const message = parsedData.message; // "hello"
+
+      users.forEach(user => {
+        if(user.rooms.includes(roomId)) { // check if the user is in the same room
+          user.ws.send(JSON.stringify({ type: "chat", roomId, message: message, userId })); // send the message to all the users who are in the same room
+        }
+      })
+      
+    }
   });
 
   
