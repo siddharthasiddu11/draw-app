@@ -1,6 +1,7 @@
 import { WebSocketServer, WebSocket } from "ws";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { JWT_SECRET } from "@repo/backend-common/config";
+import { prismaClient } from "@repo/db";
 
 const wss = new WebSocketServer({ port: 8080 });
 
@@ -54,7 +55,7 @@ wss.on('connection', function connection(ws, request) {
     ws
   });
 
-  ws.on('message', function message(data) {
+  ws.on('message', async function message(data) {
     const parsedData = JSON.parse(data.toString()); // { type: "join-room", roomId: 123 }
     if(parsedData.type === "join_room") {
       const user = users.find(x => x.ws === ws); // find the user who sent the message
@@ -73,10 +74,17 @@ wss.on('connection', function connection(ws, request) {
     if(parsedData.type === "chat") {
       const roomId = parsedData.roomId; // 123
       const message = parsedData.message; // "hello"
-
+      
+      await prismaClient.chat.create({
+        data: {
+          roomId: Number(roomId),
+          message,
+          userId
+        }
+      })
       users.forEach(user => {
         if(user.rooms.includes(roomId)) { // check if the user is in the same room
-          user.ws.send(JSON.stringify({ type: "chat", roomId, message: message, userId })); // send the message to all the users who are in the same room
+          user.ws.send(JSON.stringify({ type: "chat", roomId, message: message })); // send the message to all the users who are in the same room
         }
       })
       
