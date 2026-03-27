@@ -80,6 +80,7 @@ app.post("/signin", async (req, res) => {
    })
 
 })
+
 app.post("/room",middleware, async (req, res) => {
     const parsedData = createRoomSchema.safeParse(req.body);
     if(!parsedData.success) {
@@ -118,7 +119,7 @@ app.get("/chats/:roomId", async(req, res) => {
             roomId: roomId
         },
         orderBy: {
-            id: "desc"
+            id: "desc" // get the latest messages first
         },
         take: 50
     });
@@ -127,5 +128,16 @@ app.get("/chats/:roomId", async(req, res) => {
     })
 } )
 
-app.listen(3001);
+app.get("/room/:slug", async (req, res) => {
+    const slug = req.params.slug; // get the slug from url
+    const room = await prismaClient.room.findFirst({
+        where: {
+            slug: slug   // find the room with the given slug
+        }
+    })
+    res.json({
+        room   // return the room object
+    })
+})
 
+app.listen(3001);
