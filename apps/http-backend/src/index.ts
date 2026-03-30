@@ -136,7 +136,7 @@ app.get("/room/:slug", async (req, res) => {
         }
     })
     res.json({
-        room   // return the room object
+        room   // return the room 
     })
 })
 
