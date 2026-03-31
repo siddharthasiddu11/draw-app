@@ -17,14 +17,14 @@ export default function AuthPage({isSignin}: {isSignin: boolean}) {
       <div className="relative w-full max-w-md p-8 rounded-2xl bg-neutral-900 shadow-xl border border-neutral-800">
         <div className="flex flex-col items-center mb-8">
           <div className="text-2xl font-semibold text-white flex items-center gap-2">
-            <span className="text-3xl font-bold">Wire<span className="text-3xl font-bold bg-gradient-to-b from-gray-500 to-gray-900 text-transparent bg-clip-text">Sketch</span></span>
+            <span className="text-3xl font-bold">Wire<span className="text-3xl font-bold bg-gradient-to-b from-gray-500 to-gray-900 text-transparent bg-clip-text">Frame</span></span>
             
           </div>
         </div>
 
         <form className="space-y-5">
           <div>
-            <label className="block text-sm text-gray-400 mb-2">
+            <label  className="block text-sm text-gray-400 mb-2">
               Email
             </label>
             <input
