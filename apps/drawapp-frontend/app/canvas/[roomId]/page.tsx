@@ -8,15 +8,27 @@ export default function Canvas() {
     useEffect(() => {
         if (canvasRef.current) {
             const canvas = canvasRef.current;
-            const ctx = canvas.getContext("2d");
+            // Set canvas size to fill the viewport
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initDraw(canvas);
 
-            if(!ctx) {
-                return;
-            }
-            initDraw(canvasRef.current);
+            const handleResize = () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                initDraw(canvas);
+            };
+            window.addEventListener("resize", handleResize);
+            return () => window.removeEventListener("resize", handleResize);
         }
     }, [canvasRef])
+
     return (
-        <canvas ref={canvasRef} width={1000} height={1000}></canvas>
+        <div style={{ margin: 0, padding: 0, overflow: "hidden", width: "100vw", height: "100vh" }}>
+            <canvas
+                ref={canvasRef}
+                style={{ display: "block", margin: 0, padding: 0 }}
+            />
+        </div>
     )
-}
+}
