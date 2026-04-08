@@ -1,3 +1,6 @@
+import { HTTP_BACKEND } from "@/config";
+import axios from "axios";
+
 type Shape = {
     type: "rect";
     x: number;
@@ -12,12 +15,22 @@ type Shape = {
 }
 
 
-export function initDraw(canvas: HTMLCanvasElement) {
+export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket) {
             const ctx = canvas.getContext("2d"); // get the 2d context of the canvas
 
-            let existingShapes: Shape[] = []; // array to store the existing shapes
+            let existingShapes: Shape[] = await getExistingShapes(roomId); // array to store the existing shapes
             if(!ctx) {
                 return;
+            }
+
+            socket.onmessage = (event: MessageEvent) => {
+                const message = JSON.parse(event.data);
+                if(message.type === "chat") {
+                    const parsedShape = JSON.parse(message.message);
+                    existingShapes.push(parsedShape);
+                    clearCanvas(existingShapes, canvas, ctx);
+                }
+
             }
             ctx.fillStyle = "rgba(0, 0, 0)" // set the fill style to black
             ctx.fillRect(0, 0, canvas.width, canvas.height); // fill the canvas with black color
@@ -26,32 +39,31 @@ export function initDraw(canvas: HTMLCanvasElement) {
             let startY = 0;
             canvas.addEventListener("mousedown", (e) => { // when the mouse is clicked
                 clicked = true;
-                const rect = canvas.getBoundingClientRect();
-                startX = e.clientX - rect.left; // get the x coordinate relative to canvas
-                startY = e.clientY - rect.top; // get the y coordinate relative to canvas
+                
+                startX = e.clientX; // get the x coordinate relative to canvas
+                startY = e.clientY; // get the y coordinate relative to canvas
             })
             canvas.addEventListener("mouseup", (e) => { // when the mouse is released
                 clicked = false;
-                const rect = canvas.getBoundingClientRect();
-                const mouseX = e.clientX - rect.left;
-                const mouseY = e.clientY - rect.top;
-                const width = mouseX - startX; 
-                const height = mouseY - startY;
-                existingShapes.push({
+                const width = e.clientX - startX; 
+                const height = e.clientY - startY;
+                const shape: Shape = {
                     type: "rect",
                     x: startX,
                     y: startY,
                     width,
                     height
-                })
+
+                }
+                existingShapes.push(shape);
+                socket.send(JSON.stringify({
+                    shape
+                }))
             })
             canvas.addEventListener("mousemove", (e) => { // when the mouse is moved
                 if(clicked) {
-                    const rect = canvas.getBoundingClientRect();
-                    const mouseX = e.clientX - rect.left;
-                    const mouseY = e.clientY - rect.top;
-                    const diffX = mouseX - startX; // calculate the difference between the current x coordinate and the starting x coordinate
-                    const diffY = mouseY - startY; // calculate the difference between the current y coordinate and the starting y coordinate
+                    const diffX = e.clientX - startX; // calculate the difference between the current x coordinate and the starting x coordinate
+                    const diffY = e.clientY - startY; // calculate the difference between the current y coordinate and the starting y coordinate
                     clearCanvas(existingShapes, canvas, ctx);
                     ctx.strokeStyle = "rgba(255, 255, 255)" // set the stroke style to white
                     ctx.strokeRect(startX, startY, diffX, diffY); // draw the rectangle
@@ -70,4 +82,15 @@ existingShapes.map((shape) => {
     }
 })
 
+}
+
+async function getExistingShapes(roomId: string) {
+   const res = await axios.get(`${HTTP_BACKEND}/chats/${roomId}`)
+   const messages = res.data.messages;
+
+   const shapes = messages.map((x: {message: string}) => {
+    const messageData = JSON.parse(x.message);
+    return messageData.shape;
+   })
+   return shapes;
 }
