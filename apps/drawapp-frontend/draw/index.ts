@@ -23,17 +23,18 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                 return;
             }
 
-            socket.onmessage = (event: MessageEvent) => {  
+            socket.onmessage = (event) => {  
                 const message = JSON.parse(event.data);
                 if(message.type === "chat") {
                     const parsedShape = JSON.parse(message.message);
                     existingShapes.push(parsedShape.shape); 
                     clearCanvas(existingShapes, canvas, ctx);
                 }
-
             }
-            ctx.fillStyle = "rgba(0, 0, 0)" // set the fill style to black
-            ctx.fillRect(0, 0, canvas.width, canvas.height); // fill the canvas with black color
+
+            clearCanvas(existingShapes, canvas, ctx);
+           //ctx.fillStyle = "rgba(0, 0, 0)" // set the fill style to black
+           // ctx.fillRect(0, 0, canvas.width, canvas.height); // fill the canvas with black color
             let clicked = false;
             let startX = 0;
             let startY = 0;
