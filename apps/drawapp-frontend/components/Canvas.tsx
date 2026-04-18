@@ -1,11 +1,16 @@
 import { initDraw } from "@/draw";
 import { useEffect, useRef, useState } from "react";
 import { IconButton } from "./IconButton";
-import { Circle, Pencil, RectangleHorizontalIcon } from "lucide-react";
-type Shape = "pencil" | "circle" | "rect";
+import { Circle, Pencil, RectangleHorizontalIcon, Slash } from "lucide-react";
+type Shape = "line" | "circle" | "rect" | "pencil";
 export default function Canvas({roomId, socket}: {roomId: string, socket: WebSocket}) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [selectedTool, setSelectedTool] = useState<Shape>("circle");
+
+    useEffect(() => {
+        //@ts-ignore
+        window.selectedTool = selectedTool;
+    }, [selectedTool])
     useEffect(() => {
                if (canvasRef.current) {
 
@@ -41,9 +46,14 @@ function TopBar( {selectedTool, setSelectedTool}: {selectedTool: Shape, setSelec
             icon={<Circle />}  
         />
         <IconButton 
+            onClick={() => {setSelectedTool("line")}} 
+            activated={selectedTool === "line"}
+            icon={<Slash/>}  
+        /> 
+        <IconButton 
             onClick={() => {setSelectedTool("pencil")}} 
             activated={selectedTool === "pencil"}
-            icon={<Pencil />}  
+            icon={<Pencil/>}  
         /> 
        </div>
     </div>  

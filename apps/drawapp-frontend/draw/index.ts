@@ -12,6 +12,15 @@ type Shape = {
     centerX: number;
     centerY: number;
     radius: number;
+} | {
+    type: "line";
+    startX: number;
+    startY: number;
+    endX: number;
+    endY: number
+} | {
+    type: "pencil";
+    points: {x: number, y: number}[];
 }
 
 
@@ -48,15 +57,42 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
                 clicked = false;
                 const width = e.clientX - startX; 
                 const height = e.clientY - startY;
-                const shape: Shape = {
-                    type: "rect",
-                    x: startX,
-                    y: startY,
-                    width,
-                    height
+                //@ts-ignore
+                const selectedTool = window.selectedTool;
+                let shape: Shape | null = null;
+                if(selectedTool === "rect") {
+                    
+                    shape = {
+                        type: "rect",
+                        x: startX,
+                        y: startY,
+                        width,
+                        height
+                    }
+                } else if(selectedTool === "circle") {
+                    const radius = Math.max(width, height) / 2 ;
+                    shape = {
+                        type: "circle",
+                        radius: radius,
+                        centerX: startX + radius,
+                        centerY: startY + radius
+                    }
+                } else if(selectedTool === "line") {
+                    shape = {
+                        type: "line",
+                        startX,
+                        startY,
+                        endX: e.clientX,
+                        endY: e.clientY
+                    }
+                } 
 
+                if(!shape) {
+                    return;
                 }
+
                 existingShapes.push(shape);
+                
 
                 socket.send(JSON.stringify({
                     type: "chat",
@@ -68,11 +104,31 @@ export async function initDraw(canvas: HTMLCanvasElement, roomId: string, socket
             })
             canvas.addEventListener("mousemove", (e) => { // when the mouse is moved
                 if(clicked) {
-                    const diffX = e.clientX - startX; // calculate the difference between the current x coordinate and the starting x coordinate
-                    const diffY = e.clientY - startY; // calculate the difference between the current y coordinate and the starting y coordinate
+                    const width = e.clientX - startX; // calculate the difference between the current x coordinate and the starting x coordinate
+                    const height = e.clientY - startY; // calculate the difference between the current y coordinate and the starting y coordinate
                     clearCanvas(existingShapes, canvas, ctx);
                     ctx.strokeStyle = "rgba(255, 255, 255)" // set the stroke style to white
-                    ctx.strokeRect(startX, startY, diffX, diffY); // draw the rectangle
+                    //@ts-ignore
+                    const selectedTool = window.selectedTool;
+                    if(selectedTool === "rect") {
+                        ctx.strokeRect(startX, startY, width, height); // draw the rectangle
+                    } else if(selectedTool === "circle") {
+                        const radius = Math.max(width, height) / 2;
+                        const centerX = startX + radius;
+                        const centerY = startY + radius;
+                        
+                        ctx.beginPath();
+                        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                        ctx.stroke();
+                        ctx.closePath();
+                    } else if(selectedTool === "line") {
+                        ctx.beginPath();
+                        ctx.moveTo(startX, startY);
+                        ctx.lineTo(e.clientX, e.clientY);
+                        ctx.stroke();
+                        ctx.closePath();
+                    } 
+                    
                 }
             })
 }
@@ -85,7 +141,18 @@ existingShapes.map((shape) => {
     if(shape.type === "rect") {
         ctx.strokeStyle = "rgba(255, 255, 255)" // set the stroke style to white
         ctx.strokeRect(shape.x, shape.y, shape.width, shape.height); // draw the rectangle
-    }
+    } else if(shape.type === "circle") {
+        ctx.beginPath();
+        ctx.arc(shape.centerX, shape.centerY, shape.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.closePath();
+    } else if(shape.type === "line") {
+        ctx.beginPath();
+        ctx.moveTo(shape.startX, shape.startY);
+        ctx.lineTo(shape.endX, shape.endY);
+        ctx.stroke();
+        ctx.closePath();
+    } 
 })
 
 }
