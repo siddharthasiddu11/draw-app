@@ -11,7 +11,9 @@ export default function RoomCanvas({roomId}: {
     const [socket, setSocket] = useState<WebSocket | null>(null); 
 
     useEffect(() => {
-        const ws = new WebSocket(`${WS_URL}?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIyMDAyZjIxYi01OTNhLTQxYzUtYWViNy0wYzY0MGMxMGY5MTEiLCJpYXQiOjE3NzYwODY2OTJ9.z4SiOfswtmpuiTxScwioDm04pH9vSjuBHowOBSwSL1Y`);
+        const token = localStorage.getItem("token");
+        const ws = new WebSocket(`${WS_URL}?token=${token}`);
+
         ws.onopen = () => {    // when the socket is opened
             setSocket(ws);   // set the socket to the state
             const data = JSON.stringify({
