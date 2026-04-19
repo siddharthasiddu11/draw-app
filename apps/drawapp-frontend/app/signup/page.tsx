@@ -4,21 +4,26 @@ import { useRef } from "react";
 import { HTTP_BACKEND } from "@/config";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
 export default function Signup() {
     const router = useRouter();
     const usernameRef = useRef<HTMLInputElement>(null);
-    console.log(usernameRef.current?.value);
     const passwordRef = useRef<HTMLInputElement>(null);
     const emailRef = useRef<HTMLInputElement>(null);
 
     async function signup() {
-        await axios.post(`${HTTP_BACKEND}/signup`, {
-            username: emailRef.current?.value,
-            password: passwordRef.current?.value,
-            name: usernameRef.current?.value
-        });
-        router.push("/signin");
+        try {
+            await axios.post(`${HTTP_BACKEND}/signup`, {
+                username: emailRef.current?.value,
+                password: passwordRef.current?.value,
+                name: usernameRef.current?.value
+            });
+            toast.success("Account created successfully");
+            router.push("/signin");
+        } catch (error) {
+            toast.error("Failed to create account");
+        }
     }
     
     return (
