@@ -1,9 +1,15 @@
-import Image from "next/image";
+
+
+import Header from "@/components/header";
+import Hero from "@/components/Hero";
+
 
 export default function Home() {
+
   return (
-    <div>
-      Excelidraw
+    <div className="bg-black min-h-screen min-w-screen"> 
+      <Header/>
+      <Hero/>
     </div>
   );
 }

@@ -24,7 +24,7 @@ export default function Signin() {
             const jwt = response.data.token
             localStorage.setItem("token", jwt)
             toast.success("Signed in successfully");
-            router.push("/");
+            router.push("/create-room");
         } catch (error) {
             toast.error("Failed to sign in");
         }
